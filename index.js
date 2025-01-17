@@ -61,8 +61,6 @@ app.post('/api/users', (req, res) => {
 });
 
 app.post('/api/users/:_id/exercises', (req, res) => {
-  delete req.body[':_id']; // delete whatever garbage this is...
-
   if (!users.hasOwnProperty(req.params._id)) // this case isnt handled in the problem itself
   {
     res.json({
@@ -74,7 +72,7 @@ app.post('/api/users/:_id/exercises', (req, res) => {
   const exerciseData = {
     description: req.body.description,
     duration: +req.body.duration,
-    date: (new Date(req.body.date) || new Date()).toDateString()
+    date: (req.body.date !== undefined ? new Date(req.body.date) : new Date()).toDateString()
   };
 
   if (exercises.hasOwnProperty(req.params._id)) {
@@ -103,7 +101,7 @@ app.get('/api/users/:_id/logs', (req, res) => {
   }
 
   // more code but allows me to respond quickly to trivial cases
-  if (req.query.from == undefined && req.query.to == undefined && req.query.limit == undefined) {
+  if (req.query.from == undefined && req.query.to == undefined && req.query.limit == undefined) {    
     res.json({
       username: users[req.params._id],
       _id: req.params._id,
@@ -114,28 +112,34 @@ app.get('/api/users/:_id/logs', (req, res) => {
   else {
     let constrainedLogs = [];
     let logCount = 0;
-    const fromDate = new Date(req.query.from);
-    const toDate = new Date(req.query.to);
-
+    const fromDate = req.query.from ? new Date(new Date(req.query.from).toDateString()).getTime() : -8640000000000000;
+    const toDate = req.query.to ? new Date(new Date(req.query.to).toDateString()).getTime() : 8640000000000000;
+    const checkLimit = req.query.limit ? +req.query.limit : Number.POSITIVE_INFINITY;
+    
     for (const log of exercises[req.params._id]) {
-      const dt = new Date(log.date);
-      if (!(++logCount > req.query.limit)) {
-        if (!(req.query.from && req.query.to && fromDate < dt && toDate > dt) ||
-          !(req.query.from && fromDate < dt) ||
-          !(req.query.to && toDate > dt)) {
-          continue;
-        }
+      const dt = new Date(log.date).getTime();
 
+      if (fromDate <= dt && toDate >= dt && ++logCount <= checkLimit) {
         constrainedLogs.push(log);
       }
     }
 
-    res.json({
+    const condObj = {
       username: users[req.params._id],
       _id: req.params._id,
       count: constrainedLogs.length,
       log: constrainedLogs
-    });
+    };
+
+    if (req.query.from) {
+      condObj.from = new Date(req.query.from).toDateString();
+    }
+
+    if (req.query.to) {
+      condObj.to = new Date(req.query.to).toDateString();
+    }
+
+    res.json(condObj);
   }
 });
 
