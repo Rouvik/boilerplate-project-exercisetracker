@@ -10,6 +10,8 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
+app.use(bodyParser.urlencoded({ extended: false }));
+
 // using simple JSON databases, as MongoDB is quite quirky to setup in a hosted environment like this
 // also that testing with MySQL dosent work with the localhost:PORT setup
 const users = {};
@@ -32,8 +34,6 @@ function random36KeyGenerator() {
 
   return keyArr.join('');
 }
-
-app.use(bodyParser.urlencoded({ extended: false }));
 
 app.route('/api/users')
   .get((req, res) => {
@@ -74,7 +74,7 @@ app.post('/api/users/:_id/exercises', (req, res) => {
   const exerciseData = {
     description: req.body.description,
     duration: +req.body.duration,
-    date: new Date(req.body.date).toDateString()
+    date: (new Date(req.body.date) || new Date()).toDateString()
   };
 
   if (exercises.hasOwnProperty(req.params._id)) {
