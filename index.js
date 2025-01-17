@@ -71,18 +71,24 @@ app.post('/api/users/:_id/exercises', (req, res) => {
     return;
   }
 
+  const exerciseData = {
+    description: req.body.description,
+    duration: +req.body.duration,
+    date: new Date(req.body.date).toDateString()
+  };
+
   if (exercises.hasOwnProperty(req.params._id)) {
-    exercises[req.params._id].push(req.body);
+    exercises[req.params._id].push(exerciseData);
   }
   else  // shoudnt happen anyway
   {
-    exercises[req.params._id] = [req.body];
+    exercises[req.params._id] = [exerciseData];
   }
 
   res.json({
     username: users[req.params._id],
     _id: req.params._id,
-    ...req.body
+    ...exerciseData
   });
 });
 
@@ -110,7 +116,6 @@ app.get('/api/users/:_id/logs', (req, res) => {
     let logCount = 0;
     const fromDate = new Date(req.query.from);
     const toDate = new Date(req.query.to);
-    console.log(req.query.from, req.query.to, fromDate, toDate);
 
     for (const log of exercises[req.params._id]) {
       const dt = new Date(log.date);
